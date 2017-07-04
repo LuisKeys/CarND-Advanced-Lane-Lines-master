@@ -74,6 +74,7 @@ def apply_color_filter(image, thresh=(0, 255)):
     return binary_output
 
 def applygradients(image, ksize):
+    # Returns a 3 channel color image (all channels with the same info)
     # Apply each of the thresholding functions
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -81,13 +82,17 @@ def applygradients(image, ksize):
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(30, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(30, 100))
     dir_binary = dir_thresh(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
-    s_channel_image = apply_color_filter(image)
+    s_channel_image = apply_color_filter(image, (170, 255))
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (s_channel_image == 1)] = 1
-    return combined
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (s_channel_image == 1)] = 255
+    color_image_buffer = np.zeros((combined.shape[0],combined.shape[1],3), np.uint8)
+    color_image_buffer[:, :, 0] = combined
+    color_image_buffer[:, :, 1] = combined
+    color_image_buffer[:, :, 2] = combined
+    return color_image_buffer
     
 
-def test(mtx, dist, file_name):
+def test(mtx, dist, file_name, show_image=True):
     path = '../test_images/'
     file_name = 'straight_lines1.jpg'
     # Sobel kernel size
@@ -95,6 +100,7 @@ def test(mtx, dist, file_name):
     # Read test image
     image = mpimg.imread(path + file_name)
     combined = applygradients(image, ksize)
-    plt.imshow(combined, cmap='gray')
-    plt.show()
+    if show_image:
+        plt.imshow(combined)
+        plt.show()
     return combined, image

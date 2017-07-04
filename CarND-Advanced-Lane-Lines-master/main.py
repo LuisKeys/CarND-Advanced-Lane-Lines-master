@@ -17,9 +17,9 @@ def test_pipeline_elements():
     # Color/gradient threshold
     mtx = ut.load_float_tensor('mtx.dat')
     dist = ut.load_float_tensor('dist.dat')
-    color_grad_img, img = cg.test(mtx, dist, 'straight_lines1.jpg')
+    color_grad_img, img = cg.test(mtx, dist, 'straight_lines1.jpg', show_image=False)
     # Perspective transform
-    # transformed_img, img = pt.test(color_grad_img, img)
+    transformed_img, img = pt.test(color_grad_img, img)
     # Detect lane lines
     # Determine the lane curvature
 

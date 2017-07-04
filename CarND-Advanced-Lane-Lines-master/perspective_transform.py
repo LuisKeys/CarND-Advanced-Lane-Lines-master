@@ -16,9 +16,8 @@ def transform_unwarp(image):
     return warped_img, image
 
 def test(color_grad_img, img):
-    warped_img = transform_unwarp(color_grad_img)
-    gray = cv2.cvtColor(color_grad_img, cv2.COLOR_BGR2GRAY)
-    plt.imshow(gray)
+    warped_img, img = transform_unwarp(color_grad_img)
+    plt.imshow(warped_img)
     plt.show()
     return warped_img, img
     
