@@ -25,7 +25,16 @@
     <Compile Include="cam_calibration.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="color_gradient.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="main.py" />
+    <Compile Include="perspective_transform.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="utils.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

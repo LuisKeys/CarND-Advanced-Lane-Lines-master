@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
+path = '../camera_cal/'
+
 def calibrate_cam_by_img(image_file, nx, ny, obj_points, img_points, obj_p, index):
     # Read in an image
     img = cv2.imread(image_file)
@@ -26,7 +28,6 @@ def calibrate_cam():
     # Camera calibration
     nx = 9
     ny = 6
-    path = '../camera_cal/'
     file_name = 'calibration*.jpg'
     # Load all calibration images
     images_files = glob.glob(path + file_name)
@@ -45,10 +46,14 @@ def calibrate_cam():
     # Get camera coeficients
     ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(obj_points, img_points, img_shape, None, None)
 
+    return ret, mtx, dist, rvecs, tvecs
+
+def test():
     # Test cam calibration
     test_img = cv2.imread(path + 'calibration2.jpg')
     gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
+    ret, mtx, dist, rvecs, tvecs = calibrate_cam()
     test_undist = cv2.undistort(gray, mtx, dist, None, mtx)
     plt.imshow(test_undist, cmap="gray")
     plt.show()
-    return ret, mtx, dist, rvecs, tvecs
+    return mtx, dist
