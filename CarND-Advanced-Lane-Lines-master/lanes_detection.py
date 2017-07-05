@@ -70,6 +70,7 @@ def detect_lanes(warped_thres_img):
     window_centroids = find_window_centroids(warped_thres_img, window_width, window_height, margin)
     warped = warped_thres_img[:, :, 0]
     detected_img = np.copy(warped_thres_img)
+    img_height = warped_thres_img.shape[0]
 
     # If we found any window centers
     if len(window_centroids) > 0:
@@ -77,23 +78,46 @@ def detect_lanes(warped_thres_img):
         # Points used to draw all the left and right windows
         l_points = np.zeros_like(warped)
         r_points = np.zeros_like(warped)
+        centroids_count = len(window_centroids)
+        ploty = np.zeros(centroids_count + 1, np.float32)
+        leftx = np.zeros(centroids_count + 1, np.float32)
+        rightx = np.zeros(centroids_count + 1, np.float32)
 
         # Go through each level and draw the windows 	
-        for level in range(0,len(window_centroids)):
+        for level in range(0, centroids_count):
             # Window_mask is a function to draw window areas
-	        l_mask = window_mask(window_width, window_height, warped, window_centroids[level][0], level)
-	        r_mask = window_mask(window_width, window_height, warped, window_centroids[level][1], level)
-	        # Add graphic points from window mask here to total pixels found 
-	        l_points[(l_points == 255) | ((l_mask == 1) ) ] = 255
-	        r_points[(r_points == 255) | ((r_mask == 1) ) ] = 255
+            l_mask = window_mask(window_width, window_height, warped, window_centroids[level][0], level)
+            r_mask = window_mask(window_width, window_height, warped, window_centroids[level][1], level)
 
+            # Fill y, left x and right x points for poly fit
+            ploty[level] = img_height - level * window_height
+            leftx[level] = window_centroids[level][0]
+            rightx[level] = window_centroids[level][1]
+
+	        # Add graphic points from window mask here to total pixels found 
+            l_points[(l_points == 255) | ((l_mask == 1) ) ] = 255
+            r_points[(r_points == 255) | ((r_mask == 1) ) ] = 255
+
+        ploty[centroids_count] = 0
+        leftx[centroids_count] = leftx[centroids_count - 1]
+        rightx[centroids_count] = rightx[centroids_count - 1]
         # Draw the results
         template = np.array(r_points + l_points, np.uint8) # add both left and right window pixels together
         zero_channel = np.zeros_like(template) # create a zero color channel
-        template = np.array(cv2.merge((zero_channel, template, zero_channel)), np.uint8) # make window pixels green
-        warpage = np.array(cv2.merge((warped, warped, warped)), np.uint8) # making the original road pixels 3 color channels
-        detected_img = cv2.addWeighted(warpage, 1, template, 0.5, 0.0) # overlay the orignal road image with window results
+        template = np.array(cv2.merge((template, zero_channel, zero_channel)), np.uint8) # make window pixels green
+        detected_img = cv2.addWeighted(warped_thres_img, 1, template, 0.2, 0.0) # overlay the orignal road image with window results
+
+        # Fit second order polynomial to centers positions
+        left_fit = np.polyfit(ploty, leftx, 2)
+        left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
+        right_fit = np.polyfit(ploty, rightx, 2)
+        right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
  
+        plt.xlim(0, 1280)
+        plt.ylim(0, 720)
+        plt.plot(left_fitx, ploty, color='green', linewidth=3)
+        plt.plot(right_fitx, ploty, color='green', linewidth=3)
+
     # If no window centers found, just display orginal road image
     else:
         detected_img = warped_thres_img

@@ -94,7 +94,6 @@ def applygradients(image, ksize):
 
 def test(mtx, dist, file_name, show_image=True):
     path = '../test_images/'
-    file_name = 'straight_lines1.jpg'
     # Sobel kernel size
     ksize = 3
     # Read test image
