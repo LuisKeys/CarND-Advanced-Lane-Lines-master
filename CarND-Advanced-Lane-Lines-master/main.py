@@ -5,6 +5,7 @@ import matplotlib.image as mpimg
 import cam_calibration as cc
 import color_gradient as cg
 import perspective_transform as pt
+import lanes_detection as ld
 import utils as ut
 
 def test_pipeline_elements():
@@ -19,8 +20,9 @@ def test_pipeline_elements():
     dist = ut.load_float_tensor('dist.dat')
     color_grad_img, img = cg.test(mtx, dist, 'straight_lines1.jpg', show_image=False)
     # Perspective transform
-    transformed_img, img = pt.test(color_grad_img, img)
+    transformed_img, img = pt.test(color_grad_img, img, show_image=False)
     # Detect lane lines
+    detected_img, img = ld.test(transformed_img, img, show_image=True)
     # Determine the lane curvature
 
 # Camera calibration
