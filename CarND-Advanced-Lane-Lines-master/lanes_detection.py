@@ -4,9 +4,9 @@ import matplotlib.image as mpimg
 import cv2
 
 # window settings
-window_width = 50 
+window_width = 80 
 window_height = 80 # Break image into 9 vertical layers since image height is 720
-margin = 100 # How much to slide left and right for searching
+margin = 50 # How much to slide left and right for searching
 
 # Slide window mask
 def window_mask(width, height, img_ref, center,level):
@@ -19,11 +19,38 @@ def window_mask(width, height, img_ref, center,level):
     output[y1:y2, x1:x2] = 1
     return output
 
+def correct_centers_base_on_hist(center, hist_coord):
+    if np.abs(center - hist_coord) > 100:
+        center = hist_coord
+
+    return center
+
 def find_window_centroids(warped_thres_img, window_width, window_height, margin):
     
+    # Use histogram to limit windows positions
+    warped = warped_thres_img[:, :, 0]
+    top = (int)(warped.shape[0] / window_height)
+    leftx_base = np.zeros((top), np.uint8)
+    rightx_base = np.zeros((top), np.uint8)
+
+    #for level in range(0, top - 1):
+    #    # histogram = np.sum(warped_thres_img[:,level * window_height:(level + 1) * window_height], axis=0)
+    #    print(warped.shape)
+    #    image_band = warped[:,:]
+    #    plt.imshow(image_band)
+    #    plt.show()
+    #    histogram = np.sum(warped[warped.shape[0]//2:,:], axis=0)
+    #    midpoint = np.int(histogram.shape[0]/2)
+    #    leftx_base[level] = np.argmax(histogram[:midpoint])
+    #    rightx_base[level] = np.argmax(histogram[midpoint:]) + midpoint    
+    #    print(midpoint)
+    #    print(leftx_base[level])
+    #    print(rightx_base[level])
+    #    plt.plot(histogram)
+    #    plt.show()
+
     window_centroids = [] # Store left,right window centroid positions per level
     window = np.ones(window_width) # Create window template for convolutions
-    warped = warped_thres_img[:, :, 0]
     # First find the two starting positions for the left and right lane 
     # by using np.sum to get the vertical image slice
     # and then np.convolve the vertical image slice with the window template 
@@ -38,13 +65,14 @@ def find_window_centroids(warped_thres_img, window_width, window_height, margin)
     x1 = int(warped.shape[1] / 2)
     r_sum = np.sum(warped[y1:,x1:], axis=0)
     r_center = np.argmax(np.convolve(window, r_sum)) - window_width / 2 + int(warped.shape[1] / 2)
-    
+
+    # l_center = correct_centers_base_on_hist(l_center, leftx_base[0])
+    # r_center = correct_centers_base_on_hist(r_center, rightx_base[0])
     # Found for the first layer
     window_centroids.append((l_center,r_center))
     
     # Go through each layer looking for max pixel locations
-    top = (int)(warped.shape[0] / window_height)
-    for level in range(1,top):
+    for level in range(1, top):
         # convolve the window into the vertical slice of the image
         y1 = int(warped.shape[0] - (level + 1) * window_height)
         y2 = int(warped.shape[0] - level * window_height)
@@ -62,6 +90,8 @@ def find_window_centroids(warped_thres_img, window_width, window_height, margin)
         r_max_index = int(min(r_center + offset + margin, warped.shape[1]))
         r_center = np.argmax(conv_signal[r_min_index:r_max_index]) + r_min_index - offset
         # Add what we found for that layer
+        # l_center = correct_centers_base_on_hist(l_center, leftx_base[level - 1])
+        # r_center = correct_centers_base_on_hist(r_center, rightx_base[level - 1])
         window_centroids.append((l_center, r_center))
 
     return window_centroids
