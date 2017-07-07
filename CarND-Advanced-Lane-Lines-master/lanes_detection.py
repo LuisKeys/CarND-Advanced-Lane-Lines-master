@@ -99,6 +99,20 @@ def detect_lanes(warped_thres_img):
     # Mix window image with warped image (that already has the boxes added)
     detected_img = cv2.addWeighted(warped_thres_img_copy, 1, window_img, 1, 0)
 
+    # Define conversions in x and y from pixels space to meters
+    ym_per_pix = 30 / 720 # meters per pixel in y dimension
+    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
+
+    # Fit new polynomials to x, y in world space
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_fitx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
+    # Calculate the new radius of curvature
+    y_eval = np.max(ploty)
+    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
+    # Now our radius of curvature is in meters
+    print(left_curverad, 'm', right_curverad, 'm')
+
     return detected_img
 
 def test(warped_thres_img, img, show_image=False):
