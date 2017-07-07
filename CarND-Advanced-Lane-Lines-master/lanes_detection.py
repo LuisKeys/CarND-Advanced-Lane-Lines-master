@@ -3,154 +3,101 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import cv2
 
-# window settings
-window_width = 80 
-window_height = 80 # Break image into 9 vertical layers since image height is 720
-margin = 50 # How much to slide left and right for searching
-
-# Slide window mask
-def window_mask(width, height, img_ref, center,level):
-
-    output = np.zeros_like(img_ref)
-    y1 = int(img_ref.shape[0] - (level + 1) * height)
-    y2 = int(img_ref.shape[0] - level * height)
-    x1 = max(0,int(center-width/2))
-    x2 = min(int(center+width/2), img_ref.shape[1])
-    output[y1:y2, x1:x2] = 1
-    return output
-
-def correct_centers_base_on_hist(center, hist_coord):
-    if np.abs(center - hist_coord) > 100:
-        center = hist_coord
-
-    return center
-
-def find_window_centroids(warped_thres_img, window_width, window_height, margin):
-    
-    # Use histogram to limit windows positions
-    warped = warped_thres_img[:, :, 0]
-    top = (int)(warped.shape[0] / window_height)
-    leftx_base = np.zeros((top), np.uint8)
-    rightx_base = np.zeros((top), np.uint8)
-
-    #for level in range(0, top - 1):
-    #    # histogram = np.sum(warped_thres_img[:,level * window_height:(level + 1) * window_height], axis=0)
-    #    print(warped.shape)
-    #    image_band = warped[:,:]
-    #    plt.imshow(image_band)
-    #    plt.show()
-    #    histogram = np.sum(warped[warped.shape[0]//2:,:], axis=0)
-    #    midpoint = np.int(histogram.shape[0]/2)
-    #    leftx_base[level] = np.argmax(histogram[:midpoint])
-    #    rightx_base[level] = np.argmax(histogram[midpoint:]) + midpoint    
-    #    print(midpoint)
-    #    print(leftx_base[level])
-    #    print(rightx_base[level])
-    #    plt.plot(histogram)
-    #    plt.show()
-
-    window_centroids = [] # Store left,right window centroid positions per level
-    window = np.ones(window_width) # Create window template for convolutions
-    # First find the two starting positions for the left and right lane 
-    # by using np.sum to get the vertical image slice
-    # and then np.convolve the vertical image slice with the window template 
-    
-    # Sum quarter bottom of image to get slice, could use a different ratio
-    y1 = int(3 * warped.shape[0] / 4)
-    x2 = int(warped.shape[1] / 2)
-    l_sum = np.sum(warped[y1:, :x2], axis=0)
-
-    l_center = np.argmax(np.convolve(window, l_sum)) - window_width / 2
-    y1 = int(3 * warped.shape[0] / 4)
-    x1 = int(warped.shape[1] / 2)
-    r_sum = np.sum(warped[y1:,x1:], axis=0)
-    r_center = np.argmax(np.convolve(window, r_sum)) - window_width / 2 + int(warped.shape[1] / 2)
-
-    # l_center = correct_centers_base_on_hist(l_center, leftx_base[0])
-    # r_center = correct_centers_base_on_hist(r_center, rightx_base[0])
-    # Found for the first layer
-    window_centroids.append((l_center,r_center))
-    
-    # Go through each layer looking for max pixel locations
-    for level in range(1, top):
-        # convolve the window into the vertical slice of the image
-        y1 = int(warped.shape[0] - (level + 1) * window_height)
-        y2 = int(warped.shape[0] - level * window_height)
-        image_layer = np.sum(warped[y1:y2,:], axis=0)
-        conv_signal = np.convolve(window, image_layer)
-        # Find the best left centroid by using past left center as a reference
-        # Use window_width / 2 as offset because convolution signal reference 
-        # is at right side of window, not center of window
-        offset = window_width / 2
-        l_min_index = int(max(l_center + offset - margin, 0))
-        l_max_index = int(min(l_center + offset + margin, warped.shape[1]))
-        l_center = np.argmax(conv_signal[l_min_index:l_max_index]) + l_min_index - offset
-        # Find the best right centroid by using past right center as a reference
-        r_min_index = int(max(r_center + offset - margin,0))
-        r_max_index = int(min(r_center + offset + margin, warped.shape[1]))
-        r_center = np.argmax(conv_signal[r_min_index:r_max_index]) + r_min_index - offset
-        # Add what we found for that layer
-        # l_center = correct_centers_base_on_hist(l_center, leftx_base[level - 1])
-        # r_center = correct_centers_base_on_hist(r_center, rightx_base[level - 1])
-        window_centroids.append((l_center, r_center))
-
-    return window_centroids
-
 def detect_lanes(warped_thres_img):
-    window_centroids = find_window_centroids(warped_thres_img, window_width, window_height, margin)
-    warped = warped_thres_img[:, :, 0]
-    detected_img = np.copy(warped_thres_img)
-    img_height = warped_thres_img.shape[0]
 
-    # If we found any window centers
-    if len(window_centroids) > 0:
+    # window settings
+    window_width = 50 
+    window_height = 80 # Break image into 9 vertical sections
+    margin = 100 # Slide left and right for searching
 
-        # Points used to draw all the left and right windows
-        l_points = np.zeros_like(warped)
-        r_points = np.zeros_like(warped)
-        centroids_count = len(window_centroids)
-        ploty = np.zeros(centroids_count + 1, np.float32)
-        leftx = np.zeros(centroids_count + 1, np.float32)
-        rightx = np.zeros(centroids_count + 1, np.float32)
+    # Use histogram first
+    warped = np.copy(warped_thres_img[:, :, 0])
+    warped_thres_img_copy = np.copy(warped_thres_img)
+    histogram = np.sum(warped[warped.shape[0]//2:,:], axis=0)
+    top = (int)(warped.shape[0] / window_height)
+    midpoint = np.int(histogram.shape[0]/2)
+    leftx_base = np.argmax(histogram[:midpoint])
+    rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
-        # Go through each level and draw the windows 	
-        for level in range(0, centroids_count):
-            # Window_mask is a function to draw window areas
-            l_mask = window_mask(window_width, window_height, warped, window_centroids[level][0], level)
-            r_mask = window_mask(window_width, window_height, warped, window_centroids[level][1], level)
+    # Choose the number of sliding windows
+    # Set height of windows
+    window_height = np.int(warped.shape[0] / top)
+    # Identify the x and y positions of all nonzero pixels in the image
+    nonzero = warped.nonzero()
+    nonzeroy = np.array(nonzero[0])
+    nonzerox = np.array(nonzero[1])
+    # Current positions to be updated for each window
+    leftx_current = leftx_base
+    rightx_current = rightx_base
+    # Set the width of the windows +/- margin
+    # Set minimum number of pixels found to recenter window
+    # Create empty lists to receive left and right lane pixel indices
+    left_lane_inds = []
+    right_lane_inds = []
 
-            # Fill y, left x and right x points for poly fit
-            ploty[level] = img_height - level * window_height
-            leftx[level] = window_centroids[level][0]
-            rightx[level] = window_centroids[level][1]
+    # Iterate windows
+    for window in range(top):
+        # Get window boundaries
+        win_y_low = warped.shape[0] - (window + 1) * window_height
+        win_y_high = warped.shape[0] - window * window_height
+        win_xleft_low = leftx_current - margin
+        win_xleft_high = leftx_current + margin
+        win_xright_low = rightx_current - margin
+        win_xright_high = rightx_current + margin
+        # Draw windows
+        cv2.rectangle(warped_thres_img_copy, (win_xleft_low, win_y_low), (win_xleft_high, win_y_high), (0, 255, 0), 2) 
+        cv2.rectangle(warped_thres_img_copy, (win_xright_low, win_y_low), (win_xright_high, win_y_high), (0, 255, 0), 2) 
+        # Get nonzero pixels within the window
+        good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xleft_low) & (nonzerox < win_xleft_high)).nonzero()[0]
+        good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
+        left_lane_inds.append(good_left_inds)
+        right_lane_inds.append(good_right_inds)
+       # If you found, recenter next window
+        if len(good_left_inds) > window_width:
+            leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
+        if len(good_right_inds) > window_width:        
+            rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
 
-	        # Add graphic points from window mask here to total pixels found 
-            l_points[(l_points == 255) | ((l_mask == 1) ) ] = 255
-            r_points[(r_points == 255) | ((r_mask == 1) ) ] = 255
+    # Concatenate the arrays of indices
+    left_lane_inds = np.concatenate(left_lane_inds)
+    right_lane_inds = np.concatenate(right_lane_inds)
 
-        ploty[centroids_count] = 0
-        leftx[centroids_count] = leftx[centroids_count - 1]
-        rightx[centroids_count] = rightx[centroids_count - 1]
-        # Draw the results
-        template = np.array(r_points + l_points, np.uint8) # add both left and right window pixels together
-        zero_channel = np.zeros_like(template) # create a zero color channel
-        template = np.array(cv2.merge((template, zero_channel, zero_channel)), np.uint8) # make window pixels green
-        detected_img = cv2.addWeighted(warped_thres_img, 1, template, 0.2, 0.0) # overlay the orignal road image with window results
+    # Extract left and right line pixel positions
+    leftx = nonzerox[left_lane_inds]
+    lefty = nonzeroy[left_lane_inds] 
+    rightx = nonzerox[right_lane_inds]
+    righty = nonzeroy[right_lane_inds] 
 
-        # Fit second order polynomial to centers positions
-        left_fit = np.polyfit(ploty, leftx, 2)
-        left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
-        right_fit = np.polyfit(ploty, rightx, 2)
-        right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
- 
-        plt.xlim(0, 1280)
-        plt.ylim(0, 720)
-        plt.plot(left_fitx, ploty, color='green', linewidth=3)
-        plt.plot(right_fitx, ploty, color='green', linewidth=3)
+    # Fit a second order polynomial
+    left_fit = np.polyfit(lefty, leftx, 2)
+    right_fit = np.polyfit(righty, rightx, 2)
 
-    # If no window centers found, just display orginal road image
-    else:
-        detected_img = warped_thres_img
+    # x and y values to plot
+    ploty = np.linspace(0, warped.shape[0] - 1, warped.shape[0] )
+    left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
+    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
+
+    warped_thres_img_copy[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+    warped_thres_img_copy[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+    window_img = np.zeros_like(warped_thres_img_copy)
+    # Margin points
+    left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
+    left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
+    left_line_pts = np.hstack((left_line_window1, left_line_window2))
+    right_line_window1 = np.array([np.transpose(np.vstack([right_fitx - margin, ploty]))])
+    right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx + margin, ploty])))])
+    right_line_pts = np.hstack((right_line_window1, right_line_window2))    
+
+    # Center points
+    left_center_line = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    right_center_line = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+
+    # Draw center lines in window img
+    cv2.polylines(window_img,np.int_([left_center_line]), False, (255, 255, 0), 4)
+    cv2.polylines(window_img,np.int_([right_center_line]), False, (255, 255, 0), 4)
+
+    # Mix window image with warped image (that already has the boxes added)
+    detected_img = cv2.addWeighted(warped_thres_img_copy, 1, window_img, 1, 0)
 
     return detected_img
 
