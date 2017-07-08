@@ -111,8 +111,12 @@ def detect_lanes(warped_thres_img):
     left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
     right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
     # Now our radius of curvature is in meters
-    print(left_curverad, 'm', right_curverad, 'm')
+    # print(left_curverad, 'm', right_curverad, 'm')
 
+    return detected_img
+
+def get(warped_thres_img):
+    detected_img = detect_lanes(warped_thres_img)
     return detected_img
 
 def test(warped_thres_img, img, show_image=False):

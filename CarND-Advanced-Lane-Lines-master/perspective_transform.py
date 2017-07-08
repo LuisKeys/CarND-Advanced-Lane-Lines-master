@@ -15,6 +15,10 @@ def transform_unwarp(image):
     warped_img = cv2.warpPerspective(image, M, img_size)
     return warped_img, image
 
+def get(color_grad_img):
+    warped_img, img = transform_unwarp(color_grad_img)
+    return warped_img
+
 def test(color_grad_img, img, show_image=False):
     warped_img, img = transform_unwarp(color_grad_img)
     if show_image:

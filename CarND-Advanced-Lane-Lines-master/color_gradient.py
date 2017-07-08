@@ -91,6 +91,12 @@ def applygradients(image, ksize):
     color_image_buffer[:, :, 2] = combined
     return color_image_buffer
     
+def get(image):
+    # Sobel kernel size
+    ksize = 3
+    # Read test image
+    combined = applygradients(image, ksize)
+    return combined, image
 
 def test(mtx, dist, file_name, show_image=True):
     path = '../test_images/'
