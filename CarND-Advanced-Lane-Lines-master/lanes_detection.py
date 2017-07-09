@@ -77,8 +77,8 @@ def detect_lanes(warped_thres_img):
     left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
     right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
 
-    warped_thres_img_copy[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-    warped_thres_img_copy[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+    # warped_thres_img_copy[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+    # warped_thres_img_copy[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
     window_img = np.zeros_like(warped_thres_img_copy)
     # Margin points
     left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])

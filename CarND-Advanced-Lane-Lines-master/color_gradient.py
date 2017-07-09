@@ -65,11 +65,11 @@ def dir_thresh(gray_img, sobel_kernel=3, thresh=(0, np.pi/2)):
 
 def apply_color_filter(image, thresh=(0, 255)):
     # 1) Convert to HLS color space
-    hls_img = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
-    s_channel = hls_img[:,:,2]
+    hls_img = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+    y_channel    = hls_img[:,:,0]
     # 2) Apply a threshold to the S channel
-    binary_output = np.zeros_like(s_channel)
-    binary_output[(s_channel > thresh[0]) & (s_channel <= thresh[1])] = 1    
+    binary_output = np.zeros_like(y_channel)
+    binary_output[(y_channel > thresh[0]) & (y_channel <= thresh[1])] = 1    
     # 3) Return a binary image of threshold result
     return binary_output
 
@@ -77,14 +77,15 @@ def applygradients(image, ksize):
     # Returns a 3 channel color image (all channels with the same info)
     # Apply each of the thresholding functions
     # Convert to grayscale
+    cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.60)), (0, 0, 0), -1)
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(30, 100))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(30, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(30, 100))
     dir_binary = dir_thresh(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
-    s_channel_image = apply_color_filter(image, (170, 255))
+    y_channel_image = apply_color_filter(image, (200, 255))
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (s_channel_image == 1)] = 255
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (y_channel_image == 1)] = 255
     color_image_buffer = np.zeros((combined.shape[0],combined.shape[1],3), np.uint8)
     color_image_buffer[:, :, 0] = combined
     color_image_buffer[:, :, 1] = combined
@@ -96,7 +97,7 @@ def get(image):
     ksize = 3
     # Read test image
     combined = applygradients(image, ksize)
-    return combined, image
+    return combined
 
 def test(mtx, dist, file_name, show_image=True):
     path = '../test_images/'

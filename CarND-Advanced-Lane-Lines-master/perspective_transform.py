@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 def transform_unwarp(image):
-    offset = 100
     img_size = (image.shape[1], image.shape[0])
-    src = np.float32([(581, 460), (739, 460), (1070, 600), (380, 600)])
-    dst = np.float32([[offset, offset], [img_size[0]-offset, offset], 
-                                    [img_size[0]-offset, img_size[1]-offset], 
-                                    [offset, img_size[1]-offset]])    
+    src = np.float32([(304, 700), (575, 505), (770, 505), (1082, 700)])
+    dst = np.float32([[350, 700], 
+                      [350, 200], 
+                      [1082, 200], 
+                      [1082, 700]])    
 
     M = cv2.getPerspectiveTransform(src, dst)
     warped_img = cv2.warpPerspective(image, M, img_size)
