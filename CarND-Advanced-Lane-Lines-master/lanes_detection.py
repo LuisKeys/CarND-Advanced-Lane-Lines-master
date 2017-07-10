@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import perspective_transform as pt
 import cv2
 
 def validate_rad(radius):
@@ -29,7 +30,7 @@ def validate_lines(ploty, left_fitx, right_fitx):
 
     return left_center_line, right_center_line
 
-def detect_lanes(warped_thres_img):
+def detect_lanes(warped_thres_img, image):
 
     # window settings
     window_width = 40
@@ -103,8 +104,6 @@ def detect_lanes(warped_thres_img):
     left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
     right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
 
-    # warped_thres_img_copy[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-    # warped_thres_img_copy[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
     window_img = np.zeros_like(warped_thres_img_copy)
     # Margin points
     left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
@@ -116,22 +115,34 @@ def detect_lanes(warped_thres_img):
 
     left_center_line, right_center_line = validate_lines(ploty, left_fitx, right_fitx)
 
+    inner_poly = []
     # Draw center lines in window img
-    cv2.polylines(window_img,np.int_([left_center_line]), False, (255, 255, 0), 4)
-    cv2.polylines(window_img,np.int_([right_center_line]), False, (255, 255, 0), 4)
+    for point in left_center_line[0]:
+        inner_poly.append(point)
+
+    for point in reversed(right_center_line[0]):
+        inner_poly.append(point)
+
+    cv2.fillPoly(window_img, np.int32([inner_poly]), (0, 255, 0))
+    cv2.polylines(window_img, np.int_([left_center_line]), False, (255, 255, 0), 8)
+    cv2.polylines(window_img, np.int_([right_center_line]), False, (255, 255, 0), 8)
 
     # Mix window image with warped image (that already has the boxes added)
     detected_img = cv2.addWeighted(warped_thres_img_copy, 1, window_img, 1, 0)
 
-    return detected_img
+    # Mix window image with warped image (that already has the boxes added)
+    warped_img = pt.get_warp(window_img)
+    warped_img = cv2.addWeighted(image, 1, warped_img, 0.8, 0)
 
-def get(warped_thres_img):
-    detected_img = detect_lanes(warped_thres_img)
-    return detected_img
+    return detected_img, warped_img
+
+def get(warped_thres_img, image):
+    detected_img, warped_img = detect_lanes(warped_thres_img, image)
+    return detected_img, warped_img
 
 def test(warped_thres_img, img, show_image=False):
-    detected_img = detect_lanes(warped_thres_img)
+    detected_img, warped_img = detect_lanes(warped_thres_img, img)
     if show_image:
-        plt.imshow(detected_img)
+        plt.imshow(warped_img)
         plt.show()
     return detected_img

@@ -95,17 +95,18 @@ def apply_color_filter(image):
     # Return a binary image of threshold result
     return binary_output
 
-def applygradients(image, ksize):
+def applygradients(img, ksize):
     # Returns a 3 channel color image (all channels with the same info)
     # Apply each of the thresholding functions
     # draw 2 black rectangle on top to eliminate unneeded data
     # top
+    image = np.copy(img)
     cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.50)), (0, 0, 0), -1)
     # bottom
     cv2.rectangle(image, (0, image.shape[0] - 40), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
 
     # Convert to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(30, 100))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(30, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(30, 100))
@@ -138,7 +139,7 @@ def test(mtx, dist, file_name, show_image=True):
     # Sobel kernel size
     ksize = 31
     # Read test image
-    image = mpimg.imread(path + file_name)
+    image = cv2.imread(path + file_name)
     combined = applygradients(image, ksize)
     if show_image:
         plt.imshow(image)

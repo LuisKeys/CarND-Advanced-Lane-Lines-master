@@ -26,9 +26,9 @@ def test_pipeline_elements():
     # Color/gradient threshold
     mtx = ut.load_float_tensor('mtx.dat')
     dist = ut.load_float_tensor('dist.dat')
-    color_grad_img, img = cg.test(mtx, dist, 'output_ori_10.png', show_image=True)
+    color_grad_img, img = cg.test(mtx, dist, 'output_ori_10.png', show_image=False)
     # Perspective transform
-    transformed_img= pt.test(color_grad_img, img, show_image=True)
+    transformed_img= pt.test(color_grad_img, img, show_image=False)
     # Detect lane lines
     # Determine the lane curvature
     detected_img = ld.test(transformed_img, img, show_image=True)
@@ -42,22 +42,20 @@ def get_cam_correction_coefs():
 def process_image(image):
 
     this.frames_counter += 1
-    if this.frames_counter % 10 == 0:
-        cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image)
     # Color/gradient threshold
     combined = cg.get(image)
-    if this.frames_counter % 10 == 0:
-        cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
     # Perspective transform
     transformed_img = pt.get(combined)
-    if this.frames_counter % 10 == 0:
-        cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
     # Detect lane lines
-    detected_img = ld.get(transformed_img)
+    detected_img, warped_img = ld.get(transformed_img, image)
     if this.frames_counter % 10 == 0:
+        cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image)
+        cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
+        cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
+        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
 
-    return detected_img
+    return warped_img
 
 # Callback function or video processing library
 def video_pipeline():
@@ -66,7 +64,7 @@ def video_pipeline():
     # Perspective transform
     # Detect lane lines
     # Determine the lane curvature
-    # mtx, dist = cc.test()    
+    #ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
     video_input = "../challenge_video.mp4"
     video_output = '../challenge_video_output.mp4'
     clip = VideoFileClip(video_input).subclip(0, 2)
@@ -76,5 +74,5 @@ def video_pipeline():
     white_clip.write_videofile(video_output, audio=False)
     sys.exit()
 
-# test_pipeline_elements()
+#test_pipeline_elements()
 video_pipeline()

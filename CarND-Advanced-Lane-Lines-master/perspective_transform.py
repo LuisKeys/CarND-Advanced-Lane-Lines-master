@@ -3,7 +3,7 @@ import cv2
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
-def transform_unwarp(image):
+def transform_unwarp(image, inv=False, mask=True):
     img_size = (image.shape[1], image.shape[0])
     src = np.float32([(304, 700), (575, 505), (770, 505), (1082, 700)])
     dst = np.float32([[350, 700], 
@@ -12,19 +12,27 @@ def transform_unwarp(image):
                       [1082, 700]])    
 
     M = cv2.getPerspectiveTransform(src, dst)
+    if inv:
+        M = cv2.getPerspectiveTransform(dst, src)
+
     warped_img = cv2.warpPerspective(image, M, img_size)
 
-    # top
-    cv2.rectangle(warped_img, (0, 0), (140, image.shape[0]), (0, 0, 0), -1)
-    # bottom
-    cv2.rectangle(warped_img, (1110, 0), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
-    # center
-    cv2.rectangle(warped_img, (540, 0), (920, image.shape[0]), (0, 0, 0), -1)
+    if mask:
+        # top
+        cv2.rectangle(warped_img, (0, 0), (140, image.shape[0]), (0, 0, 0), -1)
+        # bottom
+        cv2.rectangle(warped_img, (1110, 0), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
+        # center
+        cv2.rectangle(warped_img, (540, 0), (920, image.shape[0]), (0, 0, 0), -1)
 
     return warped_img
 
 def get(color_grad_img):
-    warped_img = transform_unwarp(color_grad_img)
+    warped_img = transform_unwarp(color_grad_img, False, True)
+    return warped_img
+
+def get_warp(img):
+    warped_img = transform_unwarp(img, True, False)
     return warped_img
 
 def test(color_grad_img, img, show_image=False):
