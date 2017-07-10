@@ -3,12 +3,38 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import cv2
 
+def validate_rad(radius):
+    return ((radius >= 800) and (radius <= 2500))
+
+def validate_lines(ploty, left_fitx, right_fitx):
+    # Define conversions in x and y from pixels space to meters
+    ym_per_pix = 30 / 720 # meters per pixel in y dimension
+    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
+
+    # Center points
+    left_center_line = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    right_center_line = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+
+    # Fit new polynomials to x, y in world space
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_fitx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
+    # Calculate the new radius of curvature
+    y_eval = np.max(ploty)
+    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
+
+    # Now our radius of curvature is in meters
+    # print(left_curverad, 'm', right_curverad, 'm')
+    # print(str(validate_rad(left_curverad)), str(validate_rad(right_curverad)))
+
+    return left_center_line, right_center_line
+
 def detect_lanes(warped_thres_img):
 
     # window settings
-    window_width = 50 
+    window_width = 40
     window_height = 80 # Break image into 9 vertical sections
-    margin = 100 # Slide left and right for searching
+    margin = 50 # Slide left and right for searching
 
     # Use histogram first
     warped = np.copy(warped_thres_img[:, :, 0])
@@ -52,7 +78,7 @@ def detect_lanes(warped_thres_img):
         good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_xright_low) & (nonzerox < win_xright_high)).nonzero()[0]
         left_lane_inds.append(good_left_inds)
         right_lane_inds.append(good_right_inds)
-       # If you found, recenter next window
+        # If you found, recenter next window
         if len(good_left_inds) > window_width:
             leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
         if len(good_right_inds) > window_width:        
@@ -88,9 +114,7 @@ def detect_lanes(warped_thres_img):
     right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([right_fitx + margin, ploty])))])
     right_line_pts = np.hstack((right_line_window1, right_line_window2))    
 
-    # Center points
-    left_center_line = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
-    right_center_line = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+    left_center_line, right_center_line = validate_lines(ploty, left_fitx, right_fitx)
 
     # Draw center lines in window img
     cv2.polylines(window_img,np.int_([left_center_line]), False, (255, 255, 0), 4)
@@ -98,20 +122,6 @@ def detect_lanes(warped_thres_img):
 
     # Mix window image with warped image (that already has the boxes added)
     detected_img = cv2.addWeighted(warped_thres_img_copy, 1, window_img, 1, 0)
-
-    # Define conversions in x and y from pixels space to meters
-    ym_per_pix = 30 / 720 # meters per pixel in y dimension
-    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
-
-    # Fit new polynomials to x, y in world space
-    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_fitx * xm_per_pix, 2)
-    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
-    # Calculate the new radius of curvature
-    y_eval = np.max(ploty)
-    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
-    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
-    # Now our radius of curvature is in meters
-    # print(left_curverad, 'm', right_curverad, 'm')
 
     return detected_img
 
@@ -124,4 +134,4 @@ def test(warped_thres_img, img, show_image=False):
     if show_image:
         plt.imshow(detected_img)
         plt.show()
-    return detected_img, img
+    return detected_img

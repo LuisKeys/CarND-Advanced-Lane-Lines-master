@@ -63,38 +63,72 @@ def dir_thresh(gray_img, sobel_kernel=3, thresh=(0, np.pi/2)):
 
     return binary_output
 
-def apply_color_filter(image, thresh=(0, 255)):
+def apply_color_filter(image):
     # 1) Convert to HLS color space
-    hls_img = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
-    y_channel    = hls_img[:,:,0]
-    # 2) Apply a threshold to the S channel
-    binary_output = np.zeros_like(y_channel)
-    binary_output[(y_channel > thresh[0]) & (y_channel <= thresh[1])] = 1    
-    # 3) Return a binary image of threshold result
+    hls_img = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+    l_channel = hls_img[:,:,1]
+    s_channel = hls_img[:,:,2]
+    # scale always to 255
+    if np.amax(image) <= 1:
+        l_channel = l_channel * 255
+        s_channel = s_channel * 255
+
+    thresh_l = 200
+    thresh_s = 66
+
+    # Apply a threshold to the S channel
+    # Apply a threshold to the L channel
+    binary_output = np.zeros_like(s_channel)
+    binary_output[(l_channel > thresh_l) | (s_channel > thresh_s)] = 1
+
+    #check if there is something at right of image
+    r_max = np.amax(binary_output[:, 640:])
+    if r_max == 0:
+        #try with a lower thresh
+        thresh_l = 166
+        thresh_s = 66
+        binary_output = np.zeros_like(s_channel)
+        binary_output[(l_channel > thresh_l) | (s_channel > thresh_s)] = 1
+
+    # plt.imshow(binary_output_l, cmap='gray')
+    # plt.show()
+    # Return a binary image of threshold result
     return binary_output
 
 def applygradients(image, ksize):
     # Returns a 3 channel color image (all channels with the same info)
     # Apply each of the thresholding functions
+    # draw 2 black rectangle on top to eliminate unneeded data
+    # top
+    cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.50)), (0, 0, 0), -1)
+    # bottom
+    cv2.rectangle(image, (0, image.shape[0] - 40), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
+
     # Convert to grayscale
-    cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.60)), (0, 0, 0), -1)
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(30, 100))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(30, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(30, 100))
     dir_binary = dir_thresh(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
-    y_channel_image = apply_color_filter(image, (200, 255))
+    channel_image = apply_color_filter(image)
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (y_channel_image == 1)] = 255
+    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (channel_image == 1)] = 255
     color_image_buffer = np.zeros((combined.shape[0],combined.shape[1],3), np.uint8)
     color_image_buffer[:, :, 0] = combined
     color_image_buffer[:, :, 1] = combined
     color_image_buffer[:, :, 2] = combined
+
+    # add mask triangles
+    l_tri = np.array([[(0, 720), (0, 470), (588, 470), (218, 720)]], dtype=np.int32)
+    r_tri = np.array([[(1200, 720), (1200, 720), (831, 470), (1280, 470)]], dtype=np.int32)
+    cv2.fillPoly(color_image_buffer, l_tri, (0, 0, 0))
+    cv2.fillPoly(color_image_buffer, r_tri, (0, 0, 0))
+
     return color_image_buffer
     
 def get(image):
     # Sobel kernel size
-    ksize = 3
+    ksize = 31
     # Read test image
     combined = applygradients(image, ksize)
     return combined
@@ -102,11 +136,13 @@ def get(image):
 def test(mtx, dist, file_name, show_image=True):
     path = '../test_images/'
     # Sobel kernel size
-    ksize = 3
+    ksize = 31
     # Read test image
     image = mpimg.imread(path + file_name)
     combined = applygradients(image, ksize)
     if show_image:
+        plt.imshow(image)
+        plt.show()
         plt.imshow(combined)
         plt.show()
     return combined, image

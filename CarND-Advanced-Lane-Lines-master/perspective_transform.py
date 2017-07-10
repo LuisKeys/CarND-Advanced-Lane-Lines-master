@@ -13,16 +13,24 @@ def transform_unwarp(image):
 
     M = cv2.getPerspectiveTransform(src, dst)
     warped_img = cv2.warpPerspective(image, M, img_size)
-    return warped_img, image
+
+    # top
+    cv2.rectangle(warped_img, (0, 0), (140, image.shape[0]), (0, 0, 0), -1)
+    # bottom
+    cv2.rectangle(warped_img, (1110, 0), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
+    # center
+    cv2.rectangle(warped_img, (540, 0), (920, image.shape[0]), (0, 0, 0), -1)
+
+    return warped_img
 
 def get(color_grad_img):
-    warped_img, img = transform_unwarp(color_grad_img)
+    warped_img = transform_unwarp(color_grad_img)
     return warped_img
 
 def test(color_grad_img, img, show_image=False):
-    warped_img, img = transform_unwarp(color_grad_img)
+    warped_img= transform_unwarp(color_grad_img)
     if show_image:
         plt.imshow(warped_img)
         plt.show()
-    return warped_img, img
+    return warped_img
     
