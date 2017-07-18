@@ -9,12 +9,14 @@ import lanes_detection as ld
 import utils as ut
 import sys
 import os
+import detection_state 
 from moviepy.editor import VideoFileClip
 
 mtx = ut.load_float_tensor('mtx.dat')
 dist = ut.load_float_tensor('dist.dat')
 this = sys.modules[__name__]
 this.frames_counter = 0
+this.detection = detection_state.Detection()
 
 def test_pipeline_elements():
     # Main pipeline for lane lines detection
@@ -47,7 +49,7 @@ def process_image(image):
     # Perspective transform
     transformed_img = pt.get(combined)
     # Detect lane lines
-    detected_img, warped_img = ld.get(transformed_img, image)
+    detected_img, warped_img = ld.get(transformed_img, image, this.detection)
     if this.frames_counter % 10 == 0:
         cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image)
         cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)

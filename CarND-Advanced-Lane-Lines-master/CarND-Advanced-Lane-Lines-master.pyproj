@@ -28,6 +28,9 @@
     <Compile Include="color_gradient.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="detection_state.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="lanes_detection.py">
       <SubType>Code</SubType>
     </Compile>
