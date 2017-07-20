@@ -54,6 +54,7 @@ def test():
     gray = cv2.cvtColor(test_img, cv2.COLOR_BGR2GRAY)
     ret, mtx, dist, rvecs, tvecs = calibrate_cam()
     test_undist = cv2.undistort(gray, mtx, dist, None, mtx)
+    cv2.imwrite("../camera_cal/output_calibration2.png", test_undist)
     plt.imshow(test_undist, cmap="gray")
     plt.show()
     return mtx, dist
