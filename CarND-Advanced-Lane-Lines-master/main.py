@@ -59,8 +59,8 @@ def process_image(image):
         cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
         cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
-        warped_img = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
-        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
+        warped_img_output = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img_output)
 
         print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
         print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
