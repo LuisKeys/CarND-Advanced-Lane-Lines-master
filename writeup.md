@@ -112,7 +112,7 @@ and passing transformation matrix M, that was calculated in the previous step.
 The following is a sample of a top view transformation:
 
 #### Top view transformation result:
-![image5]( ./output_images/output_output_transf_460.png "Top view trnasformation result")
+![image5]( ./output_images/output_transf_460.png "Top view trnasformation result")
 
 The src and dst points where got comparing images in an image editor 
 with certain elements that where used for referrence between the 2 images,
