@@ -53,7 +53,10 @@ wich:
 
 A test() function is also provided on this module (and all the others) to test individual images to tune the whole system
 
+#### Distorted image:
 ![image1]( ./camera_cal/calibration2.jpg "Distorted image")
+
+#### Corrected image:
 ![image1]( ./camera_cal/output_calibration2.png "Corrected image")
 
 ### Pipeline (single images)
