@@ -62,7 +62,7 @@ To demonstrate this step, I will describe how I apply the distortion correction 
 #### Distorted image:
 ![image1]( ./camera_cal/calibration2.jpg "Distorted image")
 
-After the process described in the previous section (Camera Calibration)
+After the process is described in detail in the previous section (Camera Calibration)
 #### Corrected image:
 ![image2]( ./camera_cal/output_calibration2.png "Corrected image")
 
@@ -87,46 +87,74 @@ The main function is applygradients(img, ksize) (line 98 of this module), and do
 	
 	combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (channel_image == 1)) & (dark_mask_binary == 1)] = 255
 
+#### Original image:
+#### Binary color and gradient filtered image:
+![image3]( ./output_images/output_ori_460.png "Original image")
+
 The result is an image as the following:
 
 #### Binary color and gradient filtered image:
-![image2]( ./output_images/output_comb_460.png "Binary color and gradient filtered image")
+![image4]( ./output_images/output_comb_460.png "Binary color and gradient filtered image")
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+Perspective transform is implemented in the perspective_transform.py module.
+transform_unwarp(image, inv=False, mask=True) function call 
+	M = cv2.getPerspectiveTransform(src, dst)
+	or
+	M = cv2.getPerspectiveTransform(dst, src)
 
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
+To get the bird eye view or to return to the original perspective view.
 
-This resulted in the following source and destination points:
+The transformed image is returned calling warped_img = cv2.warpPerspective(image, M, img_size)
+and passing transformation matrix M, that was calculated in the previous step.
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
+The following is a sample of a top view transformation:
 
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+#### Top view transformation result:
+![image5]( ./output_images/output_output_transf_460.png "Top view trnasformation result")
 
-![alt text][image4]
+The src and dst points where got comparing images in an image editor 
+with certain elements that where used for referrence between the 2 images,
+which resulted in the following source and destination points:
+
+    src = np.float32([(304, 700), 
+					  (575, 505), 
+					  (770, 505), 
+					  (1082, 700)])
+
+    dst = np.float32([[350, 700], 
+                      [350, 200], 
+                      [1082, 200], 
+                      [1082, 700]])   
+
+I verified that my perspective transform was working as expected by drawing the `src` and `dst` points 
+onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+The lines identification logic is in the lanes_detection.py module.
+Its entry point is the detect_lanes(warped_thres_img, image, detection) (line 40 fo this module)
+The transformed (top view) image was divided into 9 horizontal bands and a loop walk through them,
+and based on histogram data:
 
-![alt text][image5]
+histogram = np.sum(warped[warped.shape[0]//2:,:], axis=0)
+
+search with size 40 * 80 and a margin of 50 to limit slide.
+This loop start in line 73, and the output is a group of points (left_lane_inds and right_lane_inds)
+Using np.polyfit(., ., 2) function to get a second order curve, which is then used as a continuos lane
+for both left and right sides. 
+
+The following image illustrates the process:
+
+#### Top view lines detection:
+![image6]( ./output_images/output_det_460.png "Top view lines detection")
+
+validate_lines(ploty, left_fitx, right_fitx) is called to get curve radious and 
+validations are perform for:
+1) radius
+2) bottom lanes separation
+3) top lanes separations
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
