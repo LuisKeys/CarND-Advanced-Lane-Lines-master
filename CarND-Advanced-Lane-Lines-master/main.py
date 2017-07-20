@@ -43,19 +43,30 @@ def get_cam_correction_coefs():
 
 def process_image(image):
 
+    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     this.frames_counter += 1
     # Color/gradient threshold
-    combined = cg.get(image)
+    combined = cg.get(image_bgr)
     # Perspective transform
     transformed_img = pt.get(combined)
     # Detect lane lines
     detected_img, warped_img = ld.get(transformed_img, image, this.detection)
+
     if this.frames_counter % 10 == 0:
-        cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image)
+
+        cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image_bgr)
         cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
         cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
         cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
+
+        print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
+        print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
+        print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+
+        print('Top dist:' + str(this.detection.top_lanes_distance))
+        print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
+        print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
 
     return warped_img
 
@@ -69,8 +80,8 @@ def video_pipeline():
     #ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
     video_input = "../challenge_video.mp4"
     video_output = '../challenge_video_output.mp4'
-    clip = VideoFileClip(video_input).subclip(0, 2)
-    #clip = VideoFileClip(video_input)
+    #clip = VideoFileClip(video_input).subclip(0, 2)
+    clip = VideoFileClip(video_input)
     this.frames_counter = 0
     white_clip = clip.fl_image(process_image)
     white_clip.write_videofile(video_output, audio=False)

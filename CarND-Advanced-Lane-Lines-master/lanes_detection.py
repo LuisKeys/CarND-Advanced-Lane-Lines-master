@@ -8,6 +8,12 @@ import cv2
 def validate_rad(radius):
     return ((radius >= 800) and (radius <= 2500))
 
+def bottom_validate_distance(xdistance):
+    return ((xdistance >= 590) and (xdistance <= 770))
+
+def top_validate_distance(xdistance):
+    return ((xdistance >= 660) and (xdistance <= 695))
+
 def validate_lines(ploty, left_fitx, right_fitx):
     # Define conversions in x and y from pixels space to meters
     ym_per_pix = 30 / 720 # meters per pixel in y dimension
@@ -97,8 +103,19 @@ def detect_lanes(warped_thres_img, image, detection):
     righty = nonzeroy[right_lane_inds] 
 
     # Fit a second order polynomial
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
+    if len(leftx):
+        left_fit = np.polyfit(lefty, leftx, 2)
+        detection.leftx = leftx
+        detection.lefty = lefty
+    else:
+        left_fit = np.polyfit(detection.lefty, detection.leftx, 2)
+
+    if len(rightx):
+        right_fit = np.polyfit(righty, rightx, 2)
+        detection.rightx = rightx
+        detection.righty = righty
+    else:
+        right_fit = np.polyfit(detection.righty, detection.rightx, 2)
 
     # x and y values to plot
     ploty = np.linspace(0, warped.shape[0] - 1, warped.shape[0] )
@@ -118,18 +135,59 @@ def detect_lanes(warped_thres_img, image, detection):
 
     left_valid = validate_rad(left_curverad)
     right_valid = validate_rad(right_curverad)
+    bottom_distance_valid = bottom_validate_distance(right_center_line[0][0][0] - left_center_line[0][0][0])
+    top_distance_valid = top_validate_distance(right_center_line[0][719][0] - left_center_line[0][719][0])
+
+    if not detection.left_detected and not detection.right_detected:
+        bottom_distance_valid = True
+        top_distance_valid = True
 
     inner_poly = []
     # Draw center lines in window img
     detected_img = np.zeros_like(warped_thres_img_copy)
     warped_img = np.zeros_like(warped_thres_img_copy)
 
-    if(left_valid and right_valid):
-        for point in left_center_line[0]:
-            inner_poly.append(point)
+    if (left_valid or right_valid) or (detection.left_detected and detection.right_detected):
+        if left_valid and bottom_distance_valid and top_distance_valid:
+            for point in left_center_line[0]:
+                inner_poly.append(point)
+            detection.correct_left_xfitted = left_center_line
+        else:
+            if detection.left_detected:
+                for point in detection.correct_left_xfitted[0]:
+                    inner_poly.append(point)
+                left_center_line = detection.correct_left_xfitted
 
-        for point in reversed(right_center_line[0]):
-            inner_poly.append(point)
+        if right_valid and bottom_distance_valid and top_distance_valid:
+            for point in reversed(right_center_line[0]):
+                inner_poly.append(point)
+            detection.correct_right_xfitted = right_center_line
+        else:
+            if detection.right_detected:
+                for point in reversed(detection.correct_right_xfitted[0]):
+                    inner_poly.append(point)
+                right_center_line = detection.correct_right_xfitted
+
+        if left_valid:
+            detection.left_detected = True
+        if right_valid:
+            detection.right_detected = True
+
+        if left_valid and right_valid:
+            detection.bottom_lanes_distance = detection.correct_right_xfitted[0][0][0] - detection.correct_left_xfitted[0][0][0]
+            detection.top_lanes_distance = detection.correct_right_xfitted[0][719][0] - detection.correct_left_xfitted[0][719][0]
+
+        if detection.bottom_lanes_distance < detection.min_bottom_lanes_distance:
+            detection.min_bottom_lanes_distance = detection.bottom_lanes_distance
+
+        if detection.bottom_lanes_distance > detection.max_bottom_lanes_distance:
+            detection.max_bottom_lanes_distance = detection.bottom_lanes_distance
+
+        if detection.top_lanes_distance < detection.min_top_lanes_distance:
+            detection.min_top_lanes_distance = detection.top_lanes_distance
+
+        if detection.top_lanes_distance > detection.max_top_lanes_distance:
+            detection.max_top_lanes_distance = detection.top_lanes_distance
 
         cv2.fillPoly(window_img, np.int32([inner_poly]), (0, 255, 0))
         cv2.polylines(window_img, np.int_([left_center_line]), False, (255, 255, 0), 8)

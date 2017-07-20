@@ -65,7 +65,7 @@ def dir_thresh(gray_img, sobel_kernel=3, thresh=(0, np.pi/2)):
 
 def apply_color_filter(image):
     # 1) Convert to HLS color space
-    hls_img = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
+    hls_img = cv2.cvtColor(image, cv2.COLOR_BGR2HLS)
     l_channel = hls_img[:,:,1]
     s_channel = hls_img[:,:,2]
     # scale always to 255
@@ -105,6 +105,18 @@ def applygradients(img, ksize):
     # bottom
     cv2.rectangle(image, (0, image.shape[0] - 40), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
 
+    lower_gray = np.array([0, 0, 0], dtype=np.uint8)
+    upper_gray = np.array([90, 90, 90], dtype=np.uint8)
+    dark_mask = cv2.inRange(image, lower_gray, upper_gray)
+    dark_mask_binary = np.zeros_like(dark_mask)
+    dark_mask_binary[(dark_mask > 0)] = 100
+    dark_mask_binary[(dark_mask == 0)] = 1
+    dark_mask_binary[(dark_mask == 100)] = 0
+    # cv2.imwrite("../output_images/output_colormask_0.png", dark_mask_binary)
+
+    # Bitwise-AND mask and original image
+    # res = cv2.bitwise_and(frame,frame, mask= mask)
+
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(30, 100))
@@ -113,7 +125,7 @@ def applygradients(img, ksize):
     dir_binary = dir_thresh(gray, sobel_kernel=ksize, thresh=(0.7, 1.3))
     channel_image = apply_color_filter(image)
     combined = np.zeros_like(dir_binary)
-    combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (channel_image == 1)] = 255
+    combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (channel_image == 1)) & (dark_mask_binary == 1)] = 255
     color_image_buffer = np.zeros((combined.shape[0],combined.shape[1],3), np.uint8)
     color_image_buffer[:, :, 0] = combined
     color_image_buffer[:, :, 1] = combined
