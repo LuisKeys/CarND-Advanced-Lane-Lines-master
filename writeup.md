@@ -52,25 +52,45 @@ wich:
 		dst = cv2.undistort(img, mtx, dist, None, mtx)
 
 A test() function is also provided on this module (and all the others) to test individual images to tune the whole system
-
-#### Distorted image:
-![image1]( ./camera_cal/calibration2.jpg "Distorted image")
-
-#### Corrected image:
-![image1]( ./camera_cal/output_calibration2.png "Corrected image")
+Check sample images in the next section.
 
 ### Pipeline (single images)
 
 #### 1. Provide an example of a distortion-corrected image.
 
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image2]
+#### Distorted image:
+![image1]( ./camera_cal/calibration2.jpg "Distorted image")
+
+After the process described in the previous section (Camera Calibration)
+#### Corrected image:
+![image2]( ./camera_cal/output_calibration2.png "Corrected image")
 
 #### 2. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image.  Provide an example of a binary image result.
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+All the process for color and gradients is implemented in color_gradient.py module.
+The main function is applygradients(img, ksize) (line 98 of this module), and does the following:
+1) Add black masks for areas not required for this recognition (as everything on top of the horizon line and at the bottom 
+   of the image where the car is displayed)
+2) Creates a mask for colos near black (very dark gray range) to exclude those points (dark_mask_binary)
+3) Converts BGR image in Gray scale
+4) Get horiz and vert gradients (gradx and grady) 
+   with the abs_sobel_thresh(gray_img, orient='x', sobel_kernel=3, thresh=(0, 255)) function (line 7)
+   with a kernel size of 31 (top limit value)
+5) values are normalized to 0 or 1 (binary image) based on a threshold range (30, 100), using cv2.Sobel function
+6) Grad magnitude is calculated with mag_thresh(gray_img, sobel_kernel=3, mag_thresh=(0, 255)) based on a threshold range (30, 100), 
+   function (line 30), using cv2.Sobel function
+7) Calculate de gradient direction with dir_thresh(gray_img, sobel_kernel=3, thresh=(0, np.pi/2)) function, with (0.7, 1.3) range threshold
+8) Apply a color filter converting BGR image to HLS color space and using a 200 as lower threshold for lightness channel and 
+   66 for saturation channel 
+9) Finally all the previous values are combined as follows:
+	
+	combined[(((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1)) | (channel_image == 1)) & (dark_mask_binary == 1)] = 255
 
-![alt text][image3]
+The result is an image as the following:
+
+#### Binary color and gradient filtered image:
+![image2]( ./output_images/output_comb_460.png "Binary color and gradient filtered image")
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
