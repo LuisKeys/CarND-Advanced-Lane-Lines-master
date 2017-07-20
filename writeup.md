@@ -158,21 +158,101 @@ validations are perform for:
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+Radius is calculated in function validate_lines(ploty, left_fitx, right_fitx) of lanes_detection.py module (line 17).
+The code is the following:
+
+    # Define conversions in x and y from pixels space to meters
+    ym_per_pix = 30 / 720 # meters per pixel in y dimension
+    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
+
+    # Center points
+    left_center_line = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
+    right_center_line = np.array([np.transpose(np.vstack([right_fitx, ploty]))])
+
+    # Fit new polynomials to x, y in world space
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_fitx * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_fitx * xm_per_pix, 2)
+    # Calculate the new radius of curvature
+    y_eval = np.max(ploty)
+    left_curverad = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2 * left_fit_cr[0])
+    right_curverad = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2 * right_fit_cr[0])
+
+	Radius is then evaluated with the follwing function (line 8):
+	
+	def validate_rad(radius):
+		return ((radius >= 800) and (radius <= 2500))
+		
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+Finally the polylines and filled polygon is transformed back to perspective image and superimpose 
+with the original image. This is done in lines 199 to 201 (of lanes_detection.py):
 
-![alt text][image6]
+        # Mix window image with warped image (that already has the boxes added)
+        warped_img = pt.get_warp(window_img)
+        warped_img = cv2.addWeighted(image, 1, warped_img, 0.8, 0)
+
+#### Polygon transformed back to perspective and added on top of original image:
+![image7]( ./output_images/output_warp_460.png "Polygon transformed back to perspective and added on top of original image")
 
 ---
 
 ### Pipeline (video)
 
+Video is generated in main.py module with the following function (line 75):
+# Video process
+def video_pipeline():
+    # Main pipeline for lane lines detection
+    # Color/gradient threshold
+    # Perspective transform
+    # Detect lane lines
+    # Determine the lane curvature
+    #ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
+    video_input = "../challenge_video.mp4"
+    video_output = '../challenge_video_output.mp4'
+    #clip = VideoFileClip(video_input).subclip(0, 2)
+    clip = VideoFileClip(video_input)
+    this.frames_counter = 0
+    white_clip = clip.fl_image(process_image)
+    white_clip.write_videofile(video_output, audio=False)
+    sys.exit()
+
+And callback function is the following (line 44 of main.py):
+
+# Callback function or video processing library
+def process_image(image):
+
+    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    this.frames_counter += 1
+    # Color/gradient threshold
+    combined = cg.get(image_bgr)
+    # Perspective transform
+    transformed_img = pt.get(combined)
+    # Detect lane lines
+    detected_img, warped_img = ld.get(transformed_img, image, this.detection)
+
+    if this.frames_counter % 10 == 0:
+
+        cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image_bgr)
+        cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
+        cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
+        cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
+        warped_img = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
+
+        print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
+        print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
+        print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+
+        print('Top dist:' + str(this.detection.top_lanes_distance))
+        print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
+        print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
+
+    return warped_img
+
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./challenge_video_output.mp4)
 
 ---
 
@@ -181,3 +261,14 @@ Here's a [link to my video result](./project_video.mp4)
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+I basically had issues with the dark lines, that generated grdient outputs and interfere with main yellow and white lines.
+In order to correct this I applied a mask to filter all very dark gray lines and spots in the images, 
+and this improves a lot accuracy of the model.
+Also to get more stability, the state is stored in the Detection() class (detection_state.py), 
+and this provides a reference for validations and in case things goes wrong with current frame recognition
+preivious information can be partially or fully use for current frame, which resulted in a much more stable 
+detected image.
+I still didn't test the pipeline in nigh light conditions, and perhaps the parametrization should be adjusted 
+for that conditions, hence a more robust algorythm should be parametrized for different weather and time conditions 
+as well as different lanes materials and colors.
+However I noticed that this model is quite robust to handle shadows.

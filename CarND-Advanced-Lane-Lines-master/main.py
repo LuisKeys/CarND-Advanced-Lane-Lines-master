@@ -41,6 +41,7 @@ def test_pipeline_elements():
 def get_cam_correction_coefs():
     ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
 
+# Callback function or video processing library
 def process_image(image):
 
     image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -58,6 +59,7 @@ def process_image(image):
         cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
         cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
+        warped_img = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
 
         print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
@@ -70,7 +72,7 @@ def process_image(image):
 
     return warped_img
 
-# Callback function or video processing library
+# Video process
 def video_pipeline():
     # Main pipeline for lane lines detection
     # Color/gradient threshold
