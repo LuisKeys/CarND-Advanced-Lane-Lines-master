@@ -11,6 +11,9 @@ class Detection():
         # last correct right fit
         self.correct_right_xfitted = np.zeros([1, 720, 2])
 
+        # last correct lanes mid point
+        self.bottom_lanes_mid_point = 0.0
+
         # last correct lanes bottom distance
         self.bottom_lanes_distance = 0.0
 

@@ -152,6 +152,7 @@ def detect_lanes(warped_thres_img, image, detection):
             for point in left_center_line[0]:
                 inner_poly.append(point)
             detection.correct_left_xfitted = left_center_line
+            detection.left_radius = left_curverad
         else:
             if detection.left_detected:
                 for point in detection.correct_left_xfitted[0]:
@@ -162,6 +163,7 @@ def detect_lanes(warped_thres_img, image, detection):
             for point in reversed(right_center_line[0]):
                 inner_poly.append(point)
             detection.correct_right_xfitted = right_center_line
+            detection.right_radius = right_curverad
         else:
             if detection.right_detected:
                 for point in reversed(detection.correct_right_xfitted[0]):
@@ -170,13 +172,14 @@ def detect_lanes(warped_thres_img, image, detection):
 
         if left_valid:
             detection.left_detected = True
-            detection.left_radius = left_curverad
         if right_valid:
             detection.right_detected = True
-            detection.right_radius = right_curverad
 
         if left_valid and right_valid:
-            detection.bottom_lanes_distance = detection.correct_right_xfitted[0][0][0] - detection.correct_left_xfitted[0][0][0]
+            right_bottom_x = detection.correct_right_xfitted[0][0][0]
+            left_bottom_x = detection.correct_left_xfitted[0][0][0]
+            detection.bottom_lanes_distance = right_bottom_x - left_bottom_x
+            detection.bottom_lanes_mid_point = right_bottom_x - left_bottom_x / 2.0
             detection.top_lanes_distance = detection.correct_right_xfitted[0][719][0] - detection.correct_left_xfitted[0][719][0]
 
         if detection.bottom_lanes_distance < detection.min_bottom_lanes_distance:

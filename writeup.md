@@ -199,7 +199,7 @@ with the original image. This is done in lines 199 to 201 (of lanes_detection.py
 
 ### Pipeline (video)
 
-Video is generated in main.py module with the following function (line 75):
+Video is generated in main.py module with the following function (line 93):
 # Video process
 def video_pipeline():
     # Main pipeline for lane lines detection
@@ -217,7 +217,7 @@ def video_pipeline():
     white_clip.write_videofile(video_output, audio=False)
     sys.exit()
 
-And callback function is the following (line 44 of main.py):
+And callback function is the following (line 45 of main.py):
 
 # Callback function or video processing library
 def process_image(image):

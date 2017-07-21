@@ -53,6 +53,10 @@ def process_image(image):
     # Detect lane lines
     detected_img, warped_img = ld.get(transformed_img, image, this.detection)
 
+    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
+    car_offset = 1280.0 / 2.0 - this.detection.bottom_lanes_mid_point # offset in pixles
+    car_offset *= xm_per_pix # offset in meters
+
     if this.frames_counter % 10 == 0:
 
         #cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image_bgr)
@@ -62,8 +66,10 @@ def process_image(image):
         warped_img_output = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
 
         #Add radius
-        cv2.putText(warped_img_output,"Left radius=" + "{:4.0f}".format(this.detection.left_radius), (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
-        cv2.putText(warped_img_output,"Right radius=" + "{:4.0f}".format(this.detection.right_radius), (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.putText(warped_img_output,"Left radius=" + "{:4.0f}".format(this.detection.left_radius) + " m", (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.putText(warped_img_output,"Right radius=" + "{:4.0f}".format(this.detection.right_radius) + " m", (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        #Add car offset
+        cv2.putText(warped_img_output,"Car offset=" + "{:3.1f}".format(car_offset) + " m", (50, 150), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
         cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img_output)
 
         #print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
@@ -75,8 +81,11 @@ def process_image(image):
         #print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
 
     #Add radius
-    cv2.putText(warped_img,"Left radius=" + "{:4.0f}".format(this.detection.left_radius), (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
-    cv2.putText(warped_img,"Right radius=" + "{:4.0f}".format(this.detection.right_radius), (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+    cv2.putText(warped_img,"Left radius=" + "{:4.0f}".format(this.detection.left_radius) + " m", (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+    cv2.putText(warped_img,"Right radius=" + "{:4.0f}".format(this.detection.right_radius) + " m", (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+
+    #Add car offset
+    cv2.putText(warped_img,"Car offset=" + "{:3.1f}".format(car_offset) + " m", (50, 150), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
 
     return warped_img
 
@@ -90,8 +99,8 @@ def video_pipeline():
     #ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
     video_input = "../challenge_video.mp4"
     video_output = '../challenge_video_final_output.mp4'
-    clip = VideoFileClip(video_input).subclip(0, 1)
-    #clip = VideoFileClip(video_input)
+    #clip = VideoFileClip(video_input).subclip(0, 2)
+    clip = VideoFileClip(video_input)
     this.frames_counter = 0
     white_clip = clip.fl_image(process_image)
     white_clip.write_videofile(video_output, audio=False)
