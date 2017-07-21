@@ -170,8 +170,10 @@ def detect_lanes(warped_thres_img, image, detection):
 
         if left_valid:
             detection.left_detected = True
+            detection.left_radius = left_curverad
         if right_valid:
             detection.right_detected = True
+            detection.right_radius = right_curverad
 
         if left_valid and right_valid:
             detection.bottom_lanes_distance = detection.correct_right_xfitted[0][0][0] - detection.correct_left_xfitted[0][0][0]
@@ -188,6 +190,8 @@ def detect_lanes(warped_thres_img, image, detection):
 
         if detection.top_lanes_distance > detection.max_top_lanes_distance:
             detection.max_top_lanes_distance = detection.top_lanes_distance
+
+        
 
         cv2.fillPoly(window_img, np.int32([inner_poly]), (0, 255, 0))
         cv2.polylines(window_img, np.int_([left_center_line]), False, (255, 255, 0), 8)

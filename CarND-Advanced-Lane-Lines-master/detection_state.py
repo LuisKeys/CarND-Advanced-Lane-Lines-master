@@ -40,3 +40,9 @@ class Detection():
 
         # last correct righty
         self.righty =  []
+
+        # last correct left radius
+        self.left_radius =  0.0
+
+        # last correct right radius
+        self.right_radius =  0.0

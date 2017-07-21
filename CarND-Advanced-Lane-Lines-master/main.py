@@ -59,16 +59,24 @@ def process_image(image):
         #cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
         #cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         #cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
-        #warped_img_output = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
-        #cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img_output)
+        warped_img_output = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
 
-        print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
-        print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
-        print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+        #Add radius
+        cv2.putText(warped_img_output,"Left radius=" + "{:4.0f}".format(this.detection.left_radius), (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.putText(warped_img_output,"Right radius=" + "{:4.0f}".format(this.detection.right_radius), (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img_output)
 
-        print('Top dist:' + str(this.detection.top_lanes_distance))
-        print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
-        print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
+        #print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
+        #print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
+        #print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+
+        #print('Top dist:' + str(this.detection.top_lanes_distance))
+        #print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
+        #print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
+
+    #Add radius
+    cv2.putText(warped_img,"Left radius=" + "{:4.0f}".format(this.detection.left_radius), (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+    cv2.putText(warped_img,"Right radius=" + "{:4.0f}".format(this.detection.right_radius), (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
 
     return warped_img
 
@@ -81,9 +89,9 @@ def video_pipeline():
     # Determine the lane curvature
     #ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam()
     video_input = "../challenge_video.mp4"
-    video_output = '../challenge_video_output.mp4'
-    #clip = VideoFileClip(video_input).subclip(0, 2)
-    clip = VideoFileClip(video_input)
+    video_output = '../challenge_video_final_output.mp4'
+    clip = VideoFileClip(video_input).subclip(0, 1)
+    #clip = VideoFileClip(video_input)
     this.frames_counter = 0
     white_clip = clip.fl_image(process_image)
     white_clip.write_videofile(video_output, audio=False)
