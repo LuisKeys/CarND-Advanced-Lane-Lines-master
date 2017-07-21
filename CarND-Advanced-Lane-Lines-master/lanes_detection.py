@@ -175,11 +175,11 @@ def detect_lanes(warped_thres_img, image, detection):
         if right_valid:
             detection.right_detected = True
 
-        if left_valid and right_valid:
+        if detection.left_detected and detection.right_detected:
             right_bottom_x = detection.correct_right_xfitted[0][0][0]
             left_bottom_x = detection.correct_left_xfitted[0][0][0]
             detection.bottom_lanes_distance = right_bottom_x - left_bottom_x
-            detection.bottom_lanes_mid_point = right_bottom_x - left_bottom_x / 2.0
+            detection.bottom_lanes_mid_point = detection.bottom_lanes_distance / 2.0 + left_bottom_x
             detection.top_lanes_distance = detection.correct_right_xfitted[0][719][0] - detection.correct_left_xfitted[0][719][0]
 
         if detection.bottom_lanes_distance < detection.min_bottom_lanes_distance:
