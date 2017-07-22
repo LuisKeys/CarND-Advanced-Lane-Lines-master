@@ -6,13 +6,13 @@ import detection_state
 import cv2
 
 def validate_rad(radius):
-    return ((radius >= 800) and (radius <= 2500))
+    return ((radius >= 800) and (radius <= 4500))
 
 def bottom_validate_distance(xdistance):
     return ((xdistance >= 590) and (xdistance <= 770))
 
 def top_validate_distance(xdistance):
-    return ((xdistance >= 660) and (xdistance <= 695))
+    return ((xdistance >= 690) and (xdistance <= 740))
 
 def validate_lines(ploty, left_fitx, right_fitx):
     # Define conversions in x and y from pixels space to meters

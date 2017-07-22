@@ -5,10 +5,10 @@ import matplotlib.image as mpimg
 
 def transform_unwarp(image, inv=False, mask=True):
     img_size = (image.shape[1], image.shape[0])
-    src = np.float32([(304, 700), (575, 505), (770, 505), (1082, 700)])
+    src = np.float32([(377, 648), (526, 512), (808, 514), (1079, 650)])
     dst = np.float32([[350, 700], 
-                      [350, 200], 
-                      [1082, 200], 
+                      [350, 400], 
+                      [1082, 400], 
                       [1082, 700]])    
 
     M = cv2.getPerspectiveTransform(src, dst)
@@ -19,11 +19,9 @@ def transform_unwarp(image, inv=False, mask=True):
 
     if mask:
         # top
-        cv2.rectangle(warped_img, (0, 0), (140, image.shape[0]), (0, 0, 0), -1)
+        cv2.rectangle(warped_img, (0, 0), (120, image.shape[0]), (0, 0, 0), -1)
         # bottom
-        cv2.rectangle(warped_img, (1110, 0), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
-        # center
-        cv2.rectangle(warped_img, (540, 0), (920, image.shape[0]), (0, 0, 0), -1)
+        cv2.rectangle(warped_img, (1150, 0), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
 
     return warped_img
 

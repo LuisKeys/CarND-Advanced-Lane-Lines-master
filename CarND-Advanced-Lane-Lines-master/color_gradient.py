@@ -99,26 +99,24 @@ def applygradients(img, ksize):
     # Returns a 3 channel color image (all channels with the same info)
     # Apply each of the thresholding functions
     # draw 2 black rectangle on top to eliminate unneeded data
-    # top
     image = np.copy(img)
-    cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.50)), (0, 0, 0), -1)
+
+    # top
+    cv2.rectangle(image, (0, 0), (image.shape[1], int(image.shape[0] // 1.65)), (0, 0, 0), -1)
     # bottom
     cv2.rectangle(image, (0, image.shape[0] - 40), (image.shape[1], image.shape[0]), (0, 0, 0), -1)
 
-    lower_gray = np.array([0, 0, 0], dtype=np.uint8)
-    upper_gray = np.array([90, 90, 90], dtype=np.uint8)
-    dark_mask = cv2.inRange(image, lower_gray, upper_gray)
-    dark_mask_binary = np.zeros_like(dark_mask)
-    dark_mask_binary[(dark_mask > 0)] = 100
-    dark_mask_binary[(dark_mask == 0)] = 1
-    dark_mask_binary[(dark_mask == 100)] = 0
-    # cv2.imwrite("../output_images/output_colormask_0.png", dark_mask_binary)
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    lower_gray = 128
+    upper_gray = 255
+    dark_mask_binary = cv2.threshold(gray, lower_gray, upper_gray, cv2.THRESH_BINARY)[1]
+    dark_mask_binary = dark_mask_binary / 255
 
     # Bitwise-AND mask and original image
     # res = cv2.bitwise_and(frame,frame, mask= mask)
 
-    # Convert to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     gradx = abs_sobel_thresh(gray, orient='x', sobel_kernel=ksize, thresh=(30, 100))
     grady = abs_sobel_thresh(gray, orient='y', sobel_kernel=ksize, thresh=(30, 100))
     mag_binary = mag_thresh(gray, sobel_kernel=ksize, mag_thresh=(30, 100))
@@ -132,8 +130,8 @@ def applygradients(img, ksize):
     color_image_buffer[:, :, 2] = combined
 
     # add mask triangles
-    l_tri = np.array([[(0, 720), (0, 470), (588, 470), (218, 720)]], dtype=np.int32)
-    r_tri = np.array([[(1200, 720), (1200, 720), (831, 470), (1280, 470)]], dtype=np.int32)
+    l_tri = np.array([[(0, 720), (0, 400), (400, 400), (218, 720)]], dtype=np.int32)
+    r_tri = np.array([[(1280, 720), (1280, 400), (900, 400), (1250, 720)]], dtype=np.int32)
     cv2.fillPoly(color_image_buffer, l_tri, (0, 0, 0))
     cv2.fillPoly(color_image_buffer, r_tri, (0, 0, 0))
 
@@ -152,6 +150,10 @@ def test(mtx, dist, file_name, show_image=True):
     ksize = 31
     # Read test image
     image = cv2.imread(path + file_name)
+
+    # distortion correction
+    image = cv2.undistort(image, mtx, dist, None, mtx)
+
     combined = applygradients(image, ksize)
     if show_image:
         plt.imshow(image)

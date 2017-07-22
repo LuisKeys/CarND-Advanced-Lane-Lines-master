@@ -32,7 +32,7 @@ The goals / steps of this project are the following:
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
 The camera calibration logic was implemented in the cam_calibration.py module of the project.
-In main.py (line 42):
+In main.py (line 43):
 	ret, mtx, dist, rvecs, tvecs = cc.calibrate_cam() 
 can be called to get the mtx and dist coeficients.
 Lines 25 to 27 (currently commented) get those values and store them in mtx.dat and dist.dat files
@@ -89,12 +89,12 @@ The main function is applygradients(img, ksize) (line 98 of this module), and do
 
 #### Original image:
 #### Binary color and gradient filtered image:
-![image3]( ./output_images/output_ori_460.png "Original image")
+![image3]( ./output_images/output_ori_30.png "Original image")
 
 The result is an image as the following:
 
 #### Binary color and gradient filtered image:
-![image4]( ./output_images/output_comb_460.png "Binary color and gradient filtered image")
+![image4]( ./output_images/output_comb_30.png "Binary color and gradient filtered image")
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
@@ -112,21 +112,21 @@ and passing transformation matrix M, that was calculated in the previous step.
 The following is a sample of a top view transformation:
 
 #### Top view transformation result:
-![image5]( ./output_images/output_transf_460.png "Top view trnasformation result")
+![image5]( ./output_images/output_transf_30.png "Top view trnasformation result")
 
 The src and dst points where got comparing images in an image editor 
 with certain elements that where used for referrence between the 2 images,
 which resulted in the following source and destination points:
 
-    src = np.float32([(304, 700), 
-					  (575, 505), 
-					  (770, 505), 
-					  (1082, 700)])
+    src = np.float32([(377, 648), 
+					  (526, 512), 
+					  (808, 514), 
+					  (1079, 650)])
 
     dst = np.float32([[350, 700], 
-                      [350, 200], 
-                      [1082, 200], 
-                      [1082, 700]])   
+                      [350, 400], 
+                      [1082, 400], 
+                      [1082, 700]])    
 
 I verified that my perspective transform was working as expected by drawing the `src` and `dst` points 
 onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
@@ -148,7 +148,7 @@ for both left and right sides.
 The following image illustrates the process:
 
 #### Top view lines detection:
-![image6]( ./output_images/output_det_460.png "Top view lines detection")
+![image6]( ./output_images/output_det_30.png "Top view lines detection")
 
 validate_lines(ploty, left_fitx, right_fitx) is called to get curve radious and 
 validations are perform for:
@@ -180,26 +180,26 @@ The code is the following:
 	Radius is then evaluated with the follwing function (line 8):
 	
 	def validate_rad(radius):
-		return ((radius >= 800) and (radius <= 2500))
+		return ((radius >= 800) and (radius <= 4500))
 		
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
 Finally the polylines and filled polygon is transformed back to perspective image and superimpose 
-with the original image. This is done in lines 199 to 201 (of lanes_detection.py):
+with the original image. This is done in lines 207 to 208 (of lanes_detection.py):
 
         # Mix window image with warped image (that already has the boxes added)
         warped_img = pt.get_warp(window_img)
         warped_img = cv2.addWeighted(image, 1, warped_img, 0.8, 0)
 
 #### Polygon transformed back to perspective and added on top of original image:
-![image7]( ./output_images/output_warp_460.png "Polygon transformed back to perspective and added on top of original image")
+![image7]( ./output_images/output_warp_30.png "Polygon transformed back to perspective and added on top of original image")
 
 ---
 
 ### Pipeline (video)
 
-Video is generated in main.py module with the following function (line 93):
+Video is generated in main.py module with the following function (line 98):
 # Video process
 def video_pipeline():
     # Main pipeline for lane lines detection
@@ -217,10 +217,14 @@ def video_pipeline():
     white_clip.write_videofile(video_output, audio=False)
     sys.exit()
 
-And callback function is the following (line 45 of main.py):
+And callback function is the following (line 46 of main.py):
 
 # Callback function or video processing library
+# Callback function or video processing library
 def process_image(image):
+
+    # distortion correction
+    image = cv2.undistort(image, mtx, dist, None, mtx)
 
     image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     this.frames_counter += 1
@@ -228,31 +232,49 @@ def process_image(image):
     combined = cg.get(image_bgr)
     # Perspective transform
     transformed_img = pt.get(combined)
+
     # Detect lane lines
     detected_img, warped_img = ld.get(transformed_img, image, this.detection)
 
-    if this.frames_counter % 10 == 0:
+    xm_per_pix = 3.7 / 700 # meters per pixel in x dimension
+    car_offset = 1280.0 / 2.0 - this.detection.bottom_lanes_mid_point + 60 # offset in pixles
+    car_offset *= xm_per_pix # offset in meters
+
+    if this.frames_counter % 30 == 0:
 
         cv2.imwrite("../output_images/output_ori_" + str(frames_counter) + ".png", image_bgr)
         cv2.imwrite("../output_images/output_comb_" + str(frames_counter) + ".png", combined)
         cv2.imwrite("../output_images/output_transf_" + str(frames_counter) + ".png", transformed_img)
         cv2.imwrite("../output_images/output_det_" + str(frames_counter) + ".png", detected_img)
-        warped_img = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
-        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img)
+        warped_img_output = cv2.cvtColor(warped_img, cv2.COLOR_RGB2BGR)
 
-        print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
-        print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
-        print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+        #Add radius
+        cv2.putText(warped_img_output,"Left radius=" + "{:4.0f}".format(this.detection.left_radius) + " m", (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.putText(warped_img_output,"Right radius=" + "{:4.0f}".format(this.detection.right_radius) + " m", (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        #Add car offset
+        cv2.putText(warped_img_output,"Car offset=" + "{:3.1f}".format(car_offset) + " m", (50, 150), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+        cv2.imwrite("../output_images/output_warp_" + str(frames_counter) + ".png", warped_img_output)
 
-        print('Top dist:' + str(this.detection.top_lanes_distance))
-        print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
-        print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
+        #print('Bottom dist:' + str(this.detection.bottom_lanes_distance))
+        #print('Min Bottom dist:' + str(this.detection.min_bottom_lanes_distance))
+        #print('Max Bottom dist:' + str(this.detection.max_bottom_lanes_distance))
+
+        #print('Top dist:' + str(this.detection.top_lanes_distance))
+        #print('Min Top dist:' + str(this.detection.min_top_lanes_distance))
+        #print('Max Top dist:' + str(this.detection.max_top_lanes_distance))
+
+    #Add radius
+    cv2.putText(warped_img,"Left radius=" + "{:4.0f}".format(this.detection.left_radius) + " m", (50, 50), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+    cv2.putText(warped_img,"Right radius=" + "{:4.0f}".format(this.detection.right_radius) + " m", (50, 100), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
+
+    #Add car offset
+    cv2.putText(warped_img,"Car offset=" + "{:3.1f}".format(car_offset) + " m", (50, 150), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 255, 255))
 
     return warped_img
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./challenge_video_final_output.mp4)
+Here's a [link to my video result](./project_video_final_output.mp4)
 
 ---
 
